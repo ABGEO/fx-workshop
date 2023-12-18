@@ -1,0 +1,17 @@
+### Hello World.
+GET {{apiUrl}}/hello
+
+### Create New Product.
+POST {{apiUrl}}/product
+Content-Type: application/json
+
+{
+  "code": "FXW-071",
+  "price": 100
+}
+
+### Get All Products.
+GET {{apiUrl}}/product
+
+### Get Single Product.
+GET {{apiUrl}}/product/1

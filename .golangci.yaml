@@ -1,0 +1,61 @@
+run:
+  concurrency: 4
+  timeout: 5m
+  issues-exit-code: 2
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+output:
+  format: tab
+
+linters-settings:
+  varnamelen:
+    min-name-length: 2
+    ignore-type-assert-ok: true
+    ignore-map-index-ok: true
+    ignore-chan-recv-ok: true
+    ignore-names:
+      - i
+
+#  dupl:
+#    threshold: 165
+
+#  wrapcheck:
+#    ignoreSigs:
+#      # Default Sigs.
+#      - .Errorf(
+#      - errors.New(
+#      - errors.Unwrap(
+#      - .Wrap(
+#      - .Wrapf(
+#      - .WithMessage(
+#      - .WithMessagef(
+#      - .WithStack(
+#      # Custom Sigs.
+#      - .Marshal(
+#      - .AutoMigrate(
+
+#  gomnd:
+#    ignored-numbers:
+#      - '0o644'
+
+linters:
+  enable-all: true
+  disable:
+#    - ireturn
+    - exhaustruct
+#    - tagliatelle
+    - tagalign
+    - depguard
+
+#    # Deprecated.
+    - exhaustivestruct
+    - scopelint
+    - interfacer
+    - maligned
+    - golint
+    - varcheck
+    - deadcode
+    - ifshort
+    - nosnakecase
+    - structcheck
