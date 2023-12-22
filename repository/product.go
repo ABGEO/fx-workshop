@@ -1,29 +1,21 @@
 package repository
 
 import (
-	"fmt"
-
-	"github.com/abgeo/fx-workshop/config"
-	"github.com/abgeo/fx-workshop/database"
 	"github.com/abgeo/fx-workshop/model"
 	"gorm.io/gorm"
 )
+
+type IProductRepository interface {
+	Create(product *model.Product) error
+	FindAll() ([]model.Product, error)
+	FindByID(id uint) (*model.Product, error)
+}
 
 type ProductRepository struct {
 	db *gorm.DB
 }
 
-func NewProductRepository() (*ProductRepository, error) {
-	conf, err := config.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize config: %w", err)
-	}
-
-	db, err := database.New(conf.Database.FilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize database: %w", err)
-	}
-
+func NewProductRepository(db *gorm.DB) (*ProductRepository, error) {
 	return &ProductRepository{
 		db: db,
 	}, nil

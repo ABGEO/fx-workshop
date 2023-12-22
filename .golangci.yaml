@@ -17,34 +17,27 @@ linters-settings:
     ignore-names:
       - i
 
-#  dupl:
-#    threshold: 165
 
-#  wrapcheck:
-#    ignoreSigs:
-#      # Default Sigs.
-#      - .Errorf(
-#      - errors.New(
-#      - errors.Unwrap(
-#      - .Wrap(
-#      - .Wrapf(
-#      - .WithMessage(
-#      - .WithMessagef(
-#      - .WithStack(
-#      # Custom Sigs.
-#      - .Marshal(
-#      - .AutoMigrate(
-
-#  gomnd:
-#    ignored-numbers:
-#      - '0o644'
+  wrapcheck:
+    ignoreSigs:
+      # Default Sigs.
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+      # Custom Sigs.
+      - .NewProduction(
+      - .NewDevelopment(
 
 linters:
   enable-all: true
   disable:
-#    - ireturn
+    - ireturn
     - exhaustruct
-#    - tagliatelle
     - tagalign
     - depguard
 

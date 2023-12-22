@@ -3,40 +3,39 @@ package main
 import (
 	"github.com/abgeo/fx-workshop/config"
 	"github.com/abgeo/fx-workshop/database"
-	"github.com/abgeo/fx-workshop/model"
+	"github.com/abgeo/fx-workshop/handler"
+	"github.com/abgeo/fx-workshop/repository"
+	"github.com/abgeo/fx-workshop/route"
 	"github.com/abgeo/fx-workshop/server"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 )
 
-func panicOnErr(err error) {
-	if err != nil {
-		panic(err)
+func provideLogger(conf *config.Config) (*zap.Logger, error) {
+	if conf.Env == "prod" {
+		return zap.NewProduction()
 	}
+
+	return zap.NewDevelopment()
 }
 
 func main() {
-	log, err := zap.NewDevelopment()
-	panicOnErr(err)
-
-	conf, err := config.New()
-	panicOnErr(err)
-
-	srv, err := server.New(conf.Env, conf.Server.ListenAddr, conf.Server.Port, conf.Server.TrustedProxies)
-	panicOnErr(err)
-
-	db, err := database.New(conf.Database.FilePath)
-	panicOnErr(err)
-
-	// Run Migrations.
-	err = db.AutoMigrate(&model.Product{})
-	panicOnErr(err)
-
-	log.Info(
-		"Starting HTTP Server",
-		zap.String("address", conf.Server.ListenAddr),
-		zap.String("port", conf.Server.Port),
+	fxApp := fx.New(
+		fx.WithLogger(func(logger *zap.Logger) fxevent.Logger {
+			return &fxevent.ZapLogger{Logger: logger}
+		}),
+		fx.Provide(
+			provideLogger,
+			config.New,
+			database.New,
+			fx.Annotate(server.New, fx.ParamTags(`group:"route"`)),
+		),
+		handler.Provide(),
+		repository.Provide(),
+		route.Provide(),
+		fx.Invoke(server.Run),
 	)
 
-	err = srv.ListenAndServe()
-	panicOnErr(err)
+	fxApp.Run()
 }

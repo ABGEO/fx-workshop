@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -13,22 +12,12 @@ import (
 
 type ProductHandler struct {
 	logger      *zap.Logger
-	productRepo *repository.ProductRepository
+	productRepo repository.IProductRepository
 }
 
-func NewProductHandler() (*ProductHandler, error) {
-	log, err := zap.NewDevelopment()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %w", err)
-	}
-
-	productRepo, err := repository.NewProductRepository()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize product repository: %w", err)
-	}
-
+func NewProductHandler(productRepo repository.IProductRepository, logger *zap.Logger) (*ProductHandler, error) {
 	return &ProductHandler{
-		logger:      log,
+		logger:      logger,
 		productRepo: productRepo,
 	}, nil
 }

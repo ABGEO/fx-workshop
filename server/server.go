@@ -1,59 +1,88 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 
-	"github.com/abgeo/fx-workshop/handler"
+	"github.com/abgeo/fx-workshop/config"
+	"github.com/abgeo/fx-workshop/model"
+	"github.com/abgeo/fx-workshop/route"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
-func New(env, address, port string, trustedProxies []string) (*http.Server, error) {
-	if env == "prod" {
+type Params struct {
+	fx.In
+
+	Server *http.Server
+	Logger *zap.Logger
+	Config *config.Config
+	DB     *gorm.DB
+}
+
+func New(routes []route.IRoute, conf *config.Config) (*http.Server, error) {
+	if conf.Env == "prod" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	if env == "test" {
+	if conf.Env == "test" {
 		gin.SetMode(gin.TestMode)
 	}
 
 	engine := gin.New()
-	if err := engine.SetTrustedProxies(trustedProxies); err != nil {
+	if err := engine.SetTrustedProxies(conf.Server.TrustedProxies); err != nil {
 		return nil, fmt.Errorf("unable to set trusted proxies: %w", err)
 	}
 
-	err := registerHandlers(engine)
-	if err != nil {
-		return nil, fmt.Errorf("failed to register handlers: %w", err)
+	for _, r := range routes {
+		r.Register(engine)
 	}
 
 	return &http.Server{
-		Addr:              net.JoinHostPort(address, port),
+		Addr:              net.JoinHostPort(conf.Server.ListenAddr, conf.Server.Port),
 		Handler:           engine,
 		ReadHeaderTimeout: 0,
 	}, nil
 }
 
-func registerHandlers(engine *gin.Engine) error {
-	helloHandler := handler.NewHelloHandler()
+func Run(params Params, lc fx.Lifecycle) error {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			params.Logger.Info("Running database migrations")
 
-	productHandler, err := handler.NewProductHandler()
-	if err != nil {
-		return fmt.Errorf("failed to initialize product handler: %w", err)
-	}
+			if err := params.DB.AutoMigrate(&model.Product{}); err != nil {
+				return fmt.Errorf("failed to run migrations: %w", err)
+			}
 
-	helloGroup := engine.Group("/hello")
-	{
-		helloGroup.GET("", helloHandler.Hello)
-	}
+			params.Logger.Info(
+				"Starting HTTP Server",
+				zap.String("address", params.Config.Server.ListenAddr),
+				zap.String("port", params.Config.Server.Port),
+			)
 
-	productGroup := engine.Group("/product")
-	{
-		productGroup.POST("", productHandler.Create)
-		productGroup.GET("", productHandler.GetAll)
-		productGroup.GET(":id", productHandler.GetSingle)
-	}
+			go func() {
+				if err := params.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					params.Logger.Fatal("Unable to start HTTP Server", zap.Error(err))
+				}
+			}()
+
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			params.Logger.Info("Shutting down HTTP Server")
+
+			if err := params.Server.Shutdown(ctx); err != nil {
+				return fmt.Errorf("failed to shutdown server: %w", err)
+			}
+
+			return nil
+		},
+	})
 
 	return nil
 }
