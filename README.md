@@ -45,4 +45,4 @@ The presentation could be found on [SlideShare](https://www.slideshare.net/Temur
 ## License
 
 Copyright (c) 2023 [Temuri Takalandze](https://abgeo.dev).  
-Released under the [GPL-3.0](LICENSE) license.
+Released under the [MIT](LICENSE) license.
